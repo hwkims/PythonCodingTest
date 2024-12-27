@@ -179,7 +179,8 @@
                 // 예상 출력과 실제 출력 비교
                 const expectedOutput = problem.output ? problem.output.trim() : '';  // 예상 출력 값 확인
 
-                if (output.trim() === expectedOutput) {
+                // 출력값과 예상 출력값이 일치하는지 확인
+                if (output && output.trim() === expectedOutput) {
                     document.getElementById('result-output').textContent = `통과! 출력: ${output}`;
                     document.getElementById('status').textContent = "통과!";
                     document.getElementById('status').classList.remove('failed');
