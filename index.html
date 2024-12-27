@@ -86,6 +86,16 @@
             font-family: monospace;
             white-space: pre-wrap;
         }
+
+        #status {
+            font-size: 18px;
+            color: green;
+            font-weight: bold;
+        }
+
+        .failed {
+            color: red;
+        }
     </style>
 </head>
 <body>
@@ -120,63 +130,88 @@
             <h3>실행 결과:</h3>
             <pre id="result-output">여기에 결과가 표시됩니다.</pre>
         </div>
+
+        <!-- 상태 -->
+        <div id="status"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/pyodide/v0.22.0/full/pyodide.js"></script>
     <script>
-        // 문제 데이터 (problems.json에서 로드)
-        const problems = [
-            {
-                "id": 1,
-                "title": "문제 1: Hello, World!",
-                "description": "주어진 문자열을 출력하는 프로그램을 작성하세요.",
-                "input": "없음",
-                "output": "Hello, World!"
-            },
-            {
-                "id": 2,
-                "title": "문제 2: 간단한 덧셈 프로그램",
-                "description": "두 수를 입력받아 더한 값을 출력하는 프로그램을 작성하세요.",
-                "input": "두 정수",
-                "output": "두 정수의 합"
-            },
-            // 문제 목록을 계속 추가...
-        ];
+        // 문제 데이터를 외부에서 JSON으로 가져오는 함수
+        async function loadProblems() {
+            const response = await fetch('problems.json');
+            const data = await response.json();
+            return data;
+        }
 
-        // 문제 목록을 select 박스에 추가
-        const problemListElement = document.getElementById('problem-list');
-        problems.forEach(problem => {
-            const option = document.createElement('option');
-            option.value = problem.id;
-            option.textContent = problem.title;
-            problemListElement.appendChild(option);
-        });
+        // 문제 데이터를 가져와서 <select> 옵션으로 추가
+        async function populateProblemList() {
+            const problems = await loadProblems();
+            const problemListElement = document.getElementById('problem-list');
+            
+            problems.forEach(problem => {
+                const option = document.createElement('option');
+                option.value = problem.id;
+                option.textContent = problem.title;
+                problemListElement.appendChild(option);
+            });
+        }
 
         // 문제 선택시 설명 업데이트
-        problemListElement.addEventListener('change', function () {
+        document.getElementById('problem-list').addEventListener('change', async function () {
             const selectedProblemId = parseInt(this.value);
-            const problem = problems.find(p => p.id === selectedProblemId);
-            if (problem) {
-                document.getElementById('description-text').textContent = problem.description;
+            if (selectedProblemId) {
+                const problems = await loadProblems();
+                const problem = problems.find(p => p.id === selectedProblemId);
+                if (problem) {
+                    document.getElementById('description-text').textContent = problem.description;
+                    document.getElementById('status').textContent = '';
+                    document.getElementById('status').classList.remove('failed');
+                }
             }
         });
 
-        // Pyodide 로 Python 코드 실행
-        async function loadPyodideAndRun(code) {
+        // Pyodide로 Python 코드 실행
+        async function loadPyodideAndRun(code, problem) {
             const pyodide = await loadPyodide(); // Pyodide 로드
             try {
                 const output = await pyodide.runPythonAsync(code);
-                document.getElementById('result-output').textContent = output;
+                const expectedOutput = problem.output.trim();
+                if (output.trim() === expectedOutput) {
+                    document.getElementById('result-output').textContent = `통과! 출력: ${output}`;
+                    document.getElementById('status').textContent = "통과!";
+                    document.getElementById('status').classList.remove('failed');
+                } else {
+                    document.getElementById('result-output').textContent = `실패. 예상 출력: ${expectedOutput}, 실제 출력: ${output}`;
+                    document.getElementById('status').textContent = "실패";
+                    document.getElementById('status').classList.add('failed');
+                }
             } catch (error) {
                 document.getElementById('result-output').textContent = `오류: ${error}`;
+                document.getElementById('status').textContent = "오류 발생";
+                document.getElementById('status').classList.add('failed');
             }
         }
 
         // 실행 버튼 클릭시
-        function runCode() {
+        async function runCode() {
             const code = document.getElementById('code-editor').value;
-            loadPyodideAndRun(code);
+            const selectedProblemId = parseInt(document.getElementById('problem-list').value);
+            if (!selectedProblemId) {
+                alert('문제를 선택해주세요.');
+                return;
+            }
+
+            const problems = await loadProblems();
+            const problem = problems.find(p => p.id === selectedProblemId);
+
+            if (problem) {
+                loadPyodideAndRun(code, problem);
+            }
         }
+
+        // 페이지 로드 시 문제 목록 불러오기
+        window.onload = populateProblemList;
     </script>
 </body>
 </html>
