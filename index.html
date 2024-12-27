@@ -175,12 +175,19 @@
         async function loadPyodideAndRun(code, problem) {
             const pyodide = await loadPyodide(); // Pyodide 로드
             try {
-                const output = await pyodide.runPythonAsync(code);
-                // 예상 출력과 실제 출력 비교
-                const expectedOutput = problem.output ? problem.output.trim() : '';  // 예상 출력 값 확인
+                // Pyodide 내부에서 print의 출력을 받아오기 위한 방법
+                let output = '';
+                pyodide.globals.set('output', {
+                    write: (text) => output += text // 출력값을 'output' 변수에 저장
+                });
 
-                // 출력값과 예상 출력값이 일치하는지 확인
-                if (output && output.trim() === expectedOutput) {
+                await pyodide.runPythonAsync(code);
+                
+                // 예상 출력
+                const expectedOutput = problem.output ? problem.output.trim() : '';  
+
+                // 출력값과 예상 출력값 비교
+                if (output.trim() === expectedOutput) {
                     document.getElementById('result-output').textContent = `통과! 출력: ${output}`;
                     document.getElementById('status').textContent = "통과!";
                     document.getElementById('status').classList.remove('failed');
