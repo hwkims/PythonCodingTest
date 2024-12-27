@@ -178,11 +178,14 @@
                 // Pyodide 내부에서 print의 출력을 받아오기 위한 방법
                 let output = '';
                 pyodide.globals.set('output', {
-                    write: (text) => output += text // 출력값을 'output' 변수에 저장
+                    write: (text) => {
+                        output += text; // 출력값을 'output' 변수에 저장
+                    }
                 });
 
+                // Python 코드 실행
                 await pyodide.runPythonAsync(code);
-                
+
                 // 예상 출력
                 const expectedOutput = problem.output ? problem.output.trim() : '';  
 
