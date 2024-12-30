@@ -187,7 +187,7 @@
                 await pyodide.runPythonAsync(code);
 
                 // 예상 출력
-                const expectedOutput = problem.output ? problem.output.trim() : '';  
+                const expectedOutput = problem.output ? problem.output.trim() : '';
 
                 // 출력값과 예상 출력값 비교
                 if (output.trim() === expectedOutput) {
